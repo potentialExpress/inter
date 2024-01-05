@@ -1,0 +1,37 @@
+public void setVmaTns(Task task, ExternalInterfaceRequest request, List<Task> taskList,
+			ExternalInterfaceResponse externalInterfaceResponse, String locationId)
+			throws JsonProcessingException, JsonMappingException {
+		ExternalInterfaceResponse externalInterfaceResponsVma = new ExternalInterfaceResponse();
+		List<PreparedQueryV3> preparedQueryList =
+				extractVmaTn(locationId);
+		task.setTaskName("getVmaTn");
+		if(restDbOperationServiceConnector!=null) {
+			restDbOperationServiceConnector.executeRestDbOperationApiV3(task, request, taskList,
+					externalInterfaceResponsVma, preparedQueryList);
+		}
+		String vmatn = "";
+		if(externalInterfaceResponsVma.getRawResponse()!=null) {
+			List<GenericDataBaseResponseDTO> dbResponseRemote = objectMapper.readValue(
+					externalInterfaceResponsVma.getRawResponse(), new TypeReference<List<GenericDataBaseResponseDTO>>() {
+					});
+			 List<List<GenericTableData>> dataListVma = dbResponseRemote.get(0).getDataList();
+			for (List<GenericTableData> data : dataListVma) {
+				
+				vmatn = (data.get(0).getColumnValue());
+			}
+			
+			List<GenericDataBaseResponseDTO> dbResponse = objectMapper.readValue(externalInterfaceResponse.getRawResponse(),
+					new TypeReference<List<GenericDataBaseResponseDTO>>() {
+					});
+			if (dbResponse != null) {
+				List<GenericTableData> tableData = dbResponse.get(0).getDataList().get(0);
+				GenericTableData ListOfVmatn = new GenericTableData();
+				ListOfVmatn.setColumnName("vmatn");
+				ListOfVmatn.setColumnValue(vmatn);
+				tableData.add(ListOfVmatn);
+				
+				dbResponse.get(0).getDataList().clear();
+				dbResponse.get(0).getDataList().add(tableData);
+				externalInterfaceResponse.setRawResponse(objectMapper.writeValueAsString(dbResponse));
+			}
+		}
